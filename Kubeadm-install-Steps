@@ -60,7 +60,19 @@ sudo apt-mark hold kubelet kubeadm kubectl
 free -m
 
 ### ONLY ON CONTROL NODE .. control plane install:
-kubeadm init --pod-network-cidr 10.10.0.0/16 --kubernetes-version 1.27.3 --node-name k8s-master
+kubeadm init --pod-network-cidr 10.10.0.0/16 --kubernetes-version 1.27.3 --node-name k8s-master ///on copie les 3 command dans master et kubeadm join dans chaque worker
+===> 
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+kubectl cluster-info
+kubectl get node
+
+# get worker node commands to run to join additional nodes into cluster
+kubeadm token create --print-join-command
+
+## ONLY ON WORKER nodes
+Run the command from the token create output above
 
 
 # add Calico 3.25 CNI 
@@ -70,9 +82,7 @@ wget https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/cu
 vi custom-resources.yaml <<<<<< edit the CIDR for pods if its custom
 kubectl apply -f custom-resources.yaml
 
-# get worker node commands to run to join additional nodes into cluster
-kubeadm token create --print-join-command
 
 
-## ONLY ON WORKER nodes
-Run the command from the token create output above
+
+
