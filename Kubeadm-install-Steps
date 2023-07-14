@@ -6,7 +6,9 @@ UBUNTU 22.04
 
 sudo -s
 
-printf "\n192.168.15.91 k8s-master\n192.168.15.93 k8s-worker\n\n" >> /etc/hosts
+hostnamectl set-hostname "k8s-master"
+hostnamectl set-hostname "k8s-worker"
+printf "\n192.168.1.111 k8s-master k8s-master1\n192.168.1.112 k8s-worker k8s-worker1\n\n" >> /etc/hosts
 
 printf "overlay\nbr_netfilter\n" >> /etc/modules-load.d/containerd.conf
 
