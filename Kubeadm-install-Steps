@@ -10,63 +10,67 @@ hostnamectl set-hostname "k8s-master"
 hostnamectl set-hostname "k8s-worker"
 printf "\n192.168.1.111 k8s-master k8s-master1\n192.168.1.112 k8s-worker k8s-worker1\n\n" >> /etc/hosts
 
-printf "overlay\nbr_netfilter\n" >> /etc/modules-load.d/containerd.conf
+https://kubernetes.io/fr/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
 
-modprobe overlay
+swapoff -a
+lsmod | grep br_netfilter
 modprobe br_netfilter
+lsmod | grep br_netfilter
 
-printf "net.bridge.bridge-nf-call-iptables = 1\nnet.ipv4.ip_forward = 1\nnet.bridge.bridge-nf-call-ip6tables = 1\n" >> /etc/sysctl.d/99-kubernetes-cri.conf
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
 
-sysctl --system
+sudo sysctl --system
+ufw status
+ufw disable
 
-wget https://github.com/containerd/containerd/releases/download/v1.6.16/containerd-1.6.16-linux-amd64.tar.gz -P /tmp/
-tar Cxzvf /usr/local /tmp/containerd-1.6.16-linux-amd64.tar.gz
-wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -P /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable --now containerd
-
-wget https://github.com/opencontainers/runc/releases/download/v1.1.4/runc.amd64 -P /tmp/
-install -m 755 /tmp/runc.amd64 /usr/local/sbin/runc
-
-wget https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz -P /tmp/
-mkdir -p /opt/cni/bin
-tar Cxzvf /opt/cni/bin /tmp/cni-plugins-linux-amd64-v1.2.0.tgz
-
-mkdir -p /etc/containerd
-containerd config default | tee /etc/containerd/config.toml   <<<<<<<<<<< manually edit and change systemdCgroup to true
-systemctl restart containerd
-
-swapoff -a  <<<<<<<< just disable it in /etc/fstab instead
+----------Installation Docker----------------------------------------------------------------------------
+apt-get update -y
+apt-get install -y docker.io
+systemctl start docker
+systemctl enable docker
 
 --------------------------------------------------------------------------------------------------------------------------------
 ### Installing kubeadm, kubelet and kubectl
 ### https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
 -------------------------------------------------------------------------------------------------------------------------------
 
+sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
 sudo apt-get update
-sudo apt-get install -y apt-transport-https ca-certificates curl
-
-curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-
-apt-get update
-
-reboot
-
-sudo apt-get update
-sudo apt-get install -y kubelet=1.27.3-00 kubeadm=1.27.3-00 kubectl=1.27.3-00
+sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
+
+systemctl start kubelet
+systemctl enable kubelet
+systemctl status kubelet
+
+
+https://kubernetes.io/fr/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
+### ONLY ON CONTROL NODE .. control plane install:
+
+kubeadm init --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address=192.168.1.111
+
+To start using your cluster, you need to run the following as a regular user:
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+kubectl get node
+### ONLY ON  worker
+kubeadm join 192.168.1.111:6443 --token oea1n0.gl3kg1bviphm577l \
+        --discovery-token-ca-cert-hash sha256:07ae1d1785c557a812e5b14abb79546571d38916b708ef224f84cf7733ae9838
 
 -------------------------------------------------------------------------------------------------------------------------------
 # check swap config, ensure swap is 0
 free -m
 
 ### ONLY ON CONTROL NODE .. control plane install:
-kubeadm init --pod-network-cidr 10.10.0.0/16 --kubernetes-version 1.27.3 --node-name k8s-master ///on copie les 3 command dans master et kubeadm join dans chaque worker
-===> 
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
 kubectl cluster-info
 kubectl get node
 
@@ -76,13 +80,13 @@ kubeadm token create --print-join-command
 ## ONLY ON WORKER nodes
 Run the command from the token create output above
 
+----------------------------------------------------------------------------------------------------------------
+# add Calico 
+https://docs.tigera.io/calico/latest/getting-started/kubernetes/self-managed-onprem/onpremises
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/tigera-operator.yaml
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/custom-resources.yaml -O
+kubectl create -f custom-resources.yaml
 
-# add Calico 3.25 CNI 
-### https://docs.tigera.io/calico/3.25/getting-started/kubernetes/quickstart
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
-wget https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/custom-resources.yaml
-vi custom-resources.yaml <<<<<< edit the CIDR for pods if its custom
-kubectl apply -f custom-resources.yaml
 
 
 
