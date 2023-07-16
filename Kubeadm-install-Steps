@@ -2,6 +2,10 @@ KUBERNETES 1.27
 CONTAINERD 1.6.16
 UBUNTU 22.04
 
+
+
+
+
 ### ALL: 
 
 sudo -s
@@ -9,6 +13,9 @@ sudo -s
 hostnamectl set-hostname "k8s-master"
 hostnamectl set-hostname "k8s-worker"
 printf "\n192.168.1.111 k8s-master k8s-master1\n192.168.1.112 k8s-worker k8s-worker1\n\n" >> /etc/hosts
+sudo apt-get update
+sudo apt-get install openssh-server -y
+sudo service ssh restart 
 
 https://kubernetes.io/fr/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
 
