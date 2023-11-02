@@ -10,9 +10,10 @@ UBUNTU 22.04
 
 sudo -s
 
-hostnamectl set-hostname "k8s-master"
-hostnamectl set-hostname "k8s-worker"
-printf "\n192.168.1.111 k8s-master k8s-master1\n192.168.1.112 k8s-worker k8s-worker1\n\n" >> /etc/hosts
+hostnamectl set-hostname "k8s-master1"
+hostnamectl set-hostname "k8s-worker1"
+hostnamectl set-hostname "k8s-worker2"
+printf "\n109.123.249.136 k8s-master1\n109.123.249.137 k8s-worker1\n109.123.249.138 k8s-worker2\n\n" >> /etc/hosts
 sudo apt-get update
 sudo apt-get install openssh-server -y
 sudo service ssh restart 
@@ -38,6 +39,7 @@ apt-get update -y
 apt-get install -y docker.io
 systemctl start docker
 systemctl enable docker
+systemctl status docker
 
 --------------------------------------------------------------------------------------------------------------------------------
 ### Installing kubeadm, kubelet and kubectl
@@ -61,7 +63,7 @@ systemctl status kubelet
 https://kubernetes.io/fr/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
 ### ONLY ON CONTROL NODE .. control plane install:
 
-kubeadm init --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address=192.168.1.111
+kubeadm init --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address=109.123.249.136
 
 To start using your cluster, you need to run the following as a regular user:
   mkdir -p $HOME/.kube
@@ -69,7 +71,7 @@ To start using your cluster, you need to run the following as a regular user:
   sudo chown $(id -u):$(id -g) $HOME/.kube/config
 kubectl get node
 ### ONLY ON  worker
-kubeadm join 192.168.1.111:6443 --token oea1n0.gl3kg1bviphm577l \
+kubeadm join 109.123.249.136:6443 --token oea1n0.gl3kg1bviphm577l \
         --discovery-token-ca-cert-hash sha256:07ae1d1785c557a812e5b14abb79546571d38916b708ef224f84cf7733ae9838
 
 -------------------------------------------------------------------------------------------------------------------------------
