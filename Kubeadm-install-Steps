@@ -1,3 +1,12 @@
+Steps to create a new sudo user on Ubuntu
+
+    First add the user, run: sudo adduser <UserNameHere>
+    Add the user to sudo group by typing the command in terminal for Ubuntu version 12.04 and above: sudo adduser <UserNameHere> sudo
+    In an older version of Ubuntu (version 12.04 and older), run:
+    sudo adduser <UserNameHere> admin
+    Verify it: id <UserNameHere>
+
+=========================================================================================================================
 KUBERNETES 1.27
 CONTAINERD 1.6.16
 UBUNTU 22.04
